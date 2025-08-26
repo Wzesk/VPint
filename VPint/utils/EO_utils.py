@@ -127,6 +127,20 @@ def load_product_windowed(path, y_size, x_size, y_offset, x_offset, keep_bands=[
     with rasterio.open(product[1]) as bandset:
         size_y = bandset.profile['height']
         size_x = bandset.profile['width']
+        
+        # Validate window bounds to prevent out-of-bounds errors
+        max_x_offset = size_x - x_size
+        max_y_offset = size_y - y_size
+        
+        if x_offset < 0 or y_offset < 0:
+            raise ValueError(f"Window offsets must be non-negative. Got x_offset={x_offset}, y_offset={y_offset}")
+        
+        if x_offset > max_x_offset or y_offset > max_y_offset:
+            raise ValueError(f"Window extends beyond image boundaries. "
+                           f"Image size: {size_x}x{size_y}, Window size: {x_size}x{y_size}, "
+                           f"Requested position: ({x_offset}, {y_offset}), "
+                           f"Maximum valid position: ({max_x_offset}, {max_y_offset})")
+        
         # y_size, x_size is patch (given through arguments), size_y, size_x are scene dimensions from product
         grid = np.zeros((y_size, x_size, len(keep_bands))).astype(np.uint16)
 
@@ -159,8 +173,8 @@ def load_product_windowed(path, y_size, x_size, y_offset, x_offset, keep_bands=[
                     # Output window using target resolution
                     window=Window(x_offset, y_offset, x_size, y_size)
 
-                    # Second window for reading in local resolution
-                    res_window = Window(x_offset*x_size/upscale_factor, y_offset*y_size/upscale_factor,
+                    # Second window for reading in local resolution - scale offset and size by upscale factor
+                    res_window = Window(x_offset / upscale_factor, y_offset / upscale_factor,
                                         window.width / upscale_factor, window.height / upscale_factor)
                     
                    
