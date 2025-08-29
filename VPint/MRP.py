@@ -61,33 +61,33 @@ class MRP:
         self.pred_grid = self.original_grid
           
             
-    def init_pred_grid(self,init_strategy='mean'):
+    def init_pred_grid(self, init_strategy='mean'):
         """Initialise pred_grid with mean/random/zero values as initial values for missing cells.
         
-        :param init_strategy: method for initialising unknown values. Options: 'zero', 'random', 'mean'"""
-        
+        :param init_strategy: method for initialising unknown values. Options: 'zero', 'random', 'mean'
+        """
         pred_grid = self.original_grid.copy()
         shp = pred_grid.shape
-        size = np.product(pred_grid.shape)
-        
-        if(init_strategy=='mean'):
+        size = int(np.prod(pred_grid.shape))
+
+        if init_strategy == 'mean':
             mean = np.nanmean(pred_grid)
             pred_vec = pred_grid.reshape(size)
             pred_vec[np.isnan(pred_vec)] = mean
             pred_grid = pred_vec.reshape(shp)
-        elif(init_strategy=='zero'):
+        elif init_strategy == 'zero':
             pred_vec = pred_grid.reshape(size)
             pred_vec[np.isnan(pred_vec)] = 0
             pred_grid = pred_vec.reshape(shp)
-        elif(init_strategy=='random'):
+        elif init_strategy == 'random':
             pred_vec = pred_grid.reshape(size)
-            num_nan = len(pred_vec[np.isnan(pred_vec)])
-            random_vec = np.random.normal(np.nanmean(pred_vec),np.nanstd(pred_vec),size=num_nan)
+            num_nan = np.count_nonzero(np.isnan(pred_vec))
+            random_vec = np.random.normal(np.nanmean(pred_vec), np.nanstd(pred_vec), size=num_nan)
             pred_vec[np.isnan(pred_vec)] = random_vec
             pred_grid = pred_vec.reshape(shp)
         else:
             raise VPintError("Invalid initialisation strategy: " + str(init_strategy))
-            
+
         self.pred_grid = pred_grid
                
     def get_pred_grid(self):
@@ -97,20 +97,21 @@ class MRP:
         #self.update_grid()
         return(self.pred_grid)
         
-    def apply_mask(self,grid,mask):
+    def apply_mask(self, grid, mask):
         """Apply a supplied binary mask of missing values (1 denotes missing values) to the input grid.
         
         :param grid: the target grid to apply the mask to
         :param mask: binary mask (0/1) of the same shape as grid, where 1 denotes missing values
-        :returns: target grid with missing values as specified by the mask"""
-        shp = grid.shape
-        grid_vec = grid.reshape(np.product(grid.shape))
-        mask_vec = grid.reshape(np.product(mask.shape))
-        if(grid.shape != mask.shape):
+        :returns: target grid with missing values as specified by the mask
+        """
+        if grid.shape != mask.shape:
             raise VPintError("Target and mask grids have different shapes: " + str(grid.shape) + " and " + str(mask.shape))
-        grid_vec[mask_vec==1] = np.nan
+        shp = grid.shape
+        grid_vec = grid.reshape(int(np.prod(grid.shape)))
+        mask_vec = mask.reshape(int(np.prod(mask.shape)))
+        grid_vec[mask_vec == 1] = np.nan
         grid = grid_vec.reshape(shp)
-        return(grid)
+        return grid
            
     
     def r_squared(self,true_grid):
